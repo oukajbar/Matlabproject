@@ -1,0 +1,36 @@
+function [imdsTest, bboxes] = loadAndDetectBoxes(gTruthTrain)
+    % Load the bounding box data
+    
+
+    % Prompt user to select test data directory
+    %path= "C:\Users\ONASTORE\Desktop\COMPUTER VESION\objectDetection\Test";
+
+    % Overwrite ground truth locations
+    testPath = overwriteGTruthLocations(gTruthTrain);
+
+    % Generate object training data
+    objectTrainingData = objectDetectorTrainingData(gTruthTrain);
+
+    detectorFile = 'acfDetector.mat'
+    if ~exist(detectorFile, 'file')
+        options = acfTrain(); % Get default options
+        options.ObjectTrainingSize = [100 100]; % Adjust object size range
+        options.NumStages = 8; % Set number of training stages
+        options.NumWeakLearners = 3500; % Set maximum number of weak learners
+        options.Verbose = false; % Disable display of progress information
+        acfDetector = trainACFObjectDetector(objectTrainingData, ObjectTrainingSize , [100 100]);
+        save(detectorFile, 'acfDetector');
+    else
+        % Load ACF object detector from file
+        loadedData = load(detectorFile);
+        acfDetector = loadedData.acfDetector;
+    end
+    % Create an imageDatastore for the test images
+    imdsTest = imageDatastore(testPath)
+
+    % Detect bounding boxes in test images
+    bboxes = detect(acfDetector, imdsTest)
+
+    % Return the necessary data
+    %gTruthTest = testPath;
+end
